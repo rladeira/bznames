@@ -6,4 +6,4 @@ The motivation behind this project is primarily for learning purposes. The goal 
 
 Original data source: [IBGE](https://censo2010.ibge.gov.br/nomes/#/ranking)
 
-![Nomes no Brasil | IBGE](data/ibge_nomes_no_brasil.png)
+![Nomes no Brasil | IBGE](ibge_nomes_no_brasil.png)
