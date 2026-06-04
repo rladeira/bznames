@@ -1,0 +1,30 @@
+# Set line length limit to 100 characters
+line-length = 100
+
+# Enable preview mode to use DOC (pydoclint) rules
+preview = true
+
+exclude = [
+    "notebooks",
+    ".venv",
+]
+
+[lint]
+# Enable recommended best practice rulesets
+select = [
+    "E",    # Pycodestyle errors
+    "W",    # Pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+    "RUF",  # Ruff-specific rules
+    "D",    # pydocstyle
+    "DOC",  # pydoclint
+]
+
+[lint.pydocstyle]
+convention = "google"
