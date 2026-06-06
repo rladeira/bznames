@@ -73,7 +73,9 @@ def load_ibge_name_data(
     """
     suffix = "" if count == "all" else f"_{count}"
     filename = f"{BZ_NAMES_FILE_PREFIX}{suffix}.json"
-    cache_path = pathlib.Path("data") / filename
+
+    package_base = pathlib.Path(__file__).resolve().parents[2]
+    cache_path = package_base / "data" / filename
 
     if cache_path.exists():
         with cache_path.open("r") as f:
