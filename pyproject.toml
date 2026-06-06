@@ -3,7 +3,7 @@ name = "bznames"
 version = "0.0.1"
 description = "Brazilian name generator using language models"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 authors = [
     { name = "Rafael Ladeira" }
 ]
@@ -11,15 +11,18 @@ dependencies = [
     "requests",
     "numpy",
     "torch",
+    "matplotlib",
+    "tqdm",
+    "jax[cuda12]",
 ]
 
 [dependency-groups]
 dev = [
     "pytest",
-    "tqdm",
     "ipykernel",
     "ruff",
     "ty",
+    "ipywidgets",
 ]
 
 [build-system]
