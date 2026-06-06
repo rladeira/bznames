@@ -4,16 +4,6 @@ Inspired by [Andrej Karpathy](https://github.com/karpathy)'s projects ([nn-zero-
 
 Developed primarily for educational purposes, the goal of this project is to implement generative architectures from scratch to gain a deeper understanding of neural networks and language modeling.
 
-## Project Structure
-
-* `data/` — Local directory for caching raw census statistics files.
-* `notebooks/` — Jupyter Notebooks demonstrating character-level bigrams and N-gram modeling.
-* `src/bznames/` — Core library package.
-  * `base.py` — Abstractions and interfaces for name samplers.
-  * `ibge.py` — Client utilities for downloading, cleaning, and caching name data from the IBGE API.
-  * `ngrams.py` — N-gram probability counts and generation sampling logic.
-* `tests/` — Test suite for verifying implementation accuracy.
-
 ## Data Reference
 
 The names are retrieved from the official IBGE Censo 2010 database under the following conditions:
