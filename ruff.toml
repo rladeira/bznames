@@ -5,7 +5,6 @@ line-length = 100
 preview = true
 
 exclude = [
-    "notebooks",
     ".venv",
 ]
 
