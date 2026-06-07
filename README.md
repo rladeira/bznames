@@ -11,4 +11,4 @@ The names are retrieved from the official IBGE Censo 2010 database under the fol
 * **Secrecy Threshold:** Names must have a minimum frequency of 20 occurrences nationwide.
 * **Original Data Portal:** [IBGE Nomes no Brasil (Censo 2010)](https://censo2010.ibge.gov.br/nomes/#/ranking)
 
-![Nomes no Brasil | IBGE](ibge_nomes_no_brasil.png)
+![Nomes no Brasil | IBGE](docs/assets/ibge_nomes_no_brasil.png)
