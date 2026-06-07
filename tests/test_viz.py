@@ -90,3 +90,20 @@ def test_display_tokenized_examples_invalid_format() -> None:
         display_tokenized_examples(
             [], [], [], tokenizer, format_type="invalid"
         )
+
+
+@patch("bznames.viz.display")
+@patch("bznames.viz.HTML")
+def test_display_sampled_names(mock_html, mock_display) -> None:
+    """Test display_sampled_names formatting output."""
+    model_samples = {
+        "Computed Model": ["abc", "def"],
+        "Uniform Model": ["xyz"],
+    }
+
+    from bznames.viz import display_sampled_names
+
+    display_sampled_names(model_samples)
+
+    mock_html.assert_called_once()
+    mock_display.assert_called_once()

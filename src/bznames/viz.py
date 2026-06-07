@@ -1,69 +1,14 @@
 """Visualization tools for bznames models and tokenizers."""
 
+from importlib.resources import files
 from typing import Any
 
 from IPython.display import HTML, Markdown, display
 
 from bznames.tokenizer import CharacterEncoder
 
-_TABLE_CSS = """<style>
-.bznames-table {
-  border-collapse: collapse;
-  width: 100%;
-  max-width: 800px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 16px 0;
-}
-.bznames-table th {
-  background-color: rgba(148, 163, 184, 0.08);
-  border-bottom: 2px solid rgba(148, 163, 184, 0.2);
-  text-align: left;
-  padding: 12px 16px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: inherit;
-}
-.bznames-table td {
-  padding: 12px 16px;
-  font-size: 0.875rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-  color: inherit;
-}
-.bznames-table tr:hover {
-  background-color: rgba(148, 163, 184, 0.05);
-}
-.bznames-code-token {
-  background-color: rgba(148, 163, 184, 0.15);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8125rem;
-  color: inherit;
-}
-.bznames-char-lbl {
-  opacity: 0.7;
-  font-size: 0.75rem;
-  margin-left: 8px;
-  font-family: monospace;
-}
-.bznames-bigram-lbl {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-family: monospace;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-.bznames-freq-lbl {
-  font-family: monospace;
-  color: inherit;
-  text-align: right;
-}
-</style>
-"""
+_STYLES_CSS = files("bznames").joinpath("styles.css").read_text(encoding="utf-8")
+_STYLE_TAG = f"<style>\n{_STYLES_CSS}\n</style>"
 
 
 def display_tokenized_examples(
@@ -157,7 +102,7 @@ def display_tokenized_examples(
             )
             rows.append(row)
 
-        table_html = f"""{_TABLE_CSS}
+        table_html = f"""{_STYLE_TAG}
         <table class="bznames-table">
           <thead>
             <tr>
@@ -173,3 +118,60 @@ def display_tokenized_examples(
         </table>
         """
         display(HTML(table_html))
+
+
+def display_sampled_names(
+    model_samples: dict[str, list[str]],
+) -> None:
+    """Display sampled names comparison in a side-by-side card format.
+
+    Args:
+        model_samples: A dictionary mapping model names to lists of generated names.
+    """
+    card_htmls = []
+
+    for model_name, samples in model_samples.items():
+        if not samples:
+            continue
+
+        avg_len = sum(len(s) for s in samples) / len(samples)
+        unique_chars = len(set("".join(samples)))
+        max_len = max(len(s) for s in samples)
+
+        # Determine header class
+        header_class = (
+            "computed"
+            if "computed" in model_name.lower() or "trained" in model_name.lower()
+            else "uniform"
+        )
+
+        items_html = []
+        for s in samples:
+            items_html.append(
+                f'  <li class="sample-item">'
+                f'    <span class="sample-item-text">{s}</span>'
+                f'    <span class="sample-item-length">{len(s)} ch</span>'
+                f"  </li>"
+            )
+
+        card = f"""
+        <div class="sample-card">
+          <div class="sample-card-header {header_class}">{model_name}</div>
+          <div class="sample-meta">
+            <span class="sample-meta-item">Avg: {avg_len:.1f} ch</span>
+            <span class="sample-meta-item">Max: {max_len} ch</span>
+            <span class="sample-meta-item">Unique: {unique_chars} ch</span>
+          </div>
+          <ul class="sample-list">
+            {"".join(items_html)}
+          </ul>
+        </div>
+        """
+        card_htmls.append(card)
+
+    html = f"""{_STYLE_TAG}
+    <div class="sample-comparison-container">
+      {"".join(card_htmls)}
+    </div>
+    """
+    display(HTML(html))
