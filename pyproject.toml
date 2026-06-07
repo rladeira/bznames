@@ -14,6 +14,7 @@ dependencies = [
     "matplotlib",
     "tqdm",
     "jax[cuda12]",
+    "ipython>=9.14.0",
 ]
 
 [dependency-groups]

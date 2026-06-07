@@ -25,6 +25,7 @@ name = "bznames"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
+    { name = "ipython" },
     { name = "jax", extra = ["cuda12"] },
     { name = "matplotlib" },
     { name = "numpy" },
@@ -44,6 +45,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ipython", specifier = ">=9.14.0" },
     { name = "jax", extras = ["cuda12"] },
     { name = "matplotlib" },
     { name = "numpy" },
