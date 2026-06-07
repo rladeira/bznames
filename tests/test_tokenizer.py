@@ -1,13 +1,13 @@
-"""Unit tests for N-gram functions."""
+"""Unit tests for N-gram functions and character tokenization."""
 
 import pytest
 
-from bznames.tokenizer import CharacterEncoder, extract_ngrams
+from bznames.tokenizer import CharacterTokenizer, extract_ngrams, tokenize_dataset
 
 
 def test_extract_ngrams() -> None:
     """Test extracting character N-grams from a name."""
-    ngrams = extract_ngrams("test", n=2, special_token=".")
+    ngrams = extract_ngrams("test", ngram_size=2, special_token=".")
 
     assert ngrams == [
         (".", "t"),
@@ -19,48 +19,63 @@ def test_extract_ngrams() -> None:
 
 
 def test_extract_ngrams_invalid_n() -> None:
-    """Test that extract_ngrams raises ValueError when n < 2."""
-    with pytest.raises(ValueError, match=r"n must be at least 2\."):
-        extract_ngrams("test", n=1, special_token=".")
+    """Test that extract_ngrams raises ValueError when ngram_size < 2."""
+    with pytest.raises(ValueError, match=r"ngram_size must be at least 2\."):
+        extract_ngrams("test", ngram_size=1, special_token=".")
 
 
-def test_character_encoder() -> None:
-    """Test CharacterEncoder setup, encoding, and decoding."""
+def test_character_tokenizer() -> None:
+    """Test CharacterTokenizer setup, encoding, and decoding."""
     vocab = ["a", "b", "e", "f", "g", "i", "l", "r"]
-    encoder = CharacterEncoder(vocab, special_token=".")
+    tokenizer = CharacterTokenizer(vocab, special_token=".")
 
     # Vocabulary should be: '.', 'a', 'b', 'e', 'f', 'g', 'i', 'l', 'r'
-    assert encoder.vocab == [".", "a", "b", "e", "f", "g", "i", "l", "r"]
-    assert encoder.vocab_size == 9
+    assert tokenizer.vocab == [".", "a", "b", "e", "f", "g", "i", "l", "r"]
+    assert tokenizer.vocab_size == 9
 
     # Test single char encoding
-    assert encoder.encode_char(".") == 0
-    assert encoder.encode_char("a") == 1
-    assert encoder.encode_char("r") == 8
+    assert tokenizer.encode_char(".") == 0
+    assert tokenizer.encode_char("a") == 1
+    assert tokenizer.encode_char("r") == 8
 
     # Test single index decoding
-    assert encoder.decode_index(0) == "."
-    assert encoder.decode_index(1) == "a"
-    assert encoder.decode_index(8) == "r"
+    assert tokenizer.decode_index(0) == "."
+    assert tokenizer.decode_index(1) == "a"
+    assert tokenizer.decode_index(8) == "r"
 
     # Test string encoding
-    assert encoder.encode("rafael") == [8, 1, 4, 1, 3, 7]
+    assert tokenizer.encode("rafael") == [8, 1, 4, 1, 3, 7]
 
     # Test list decoding
-    assert encoder.decode([8, 1, 4, 1, 3, 7]) == "rafael"
+    assert tokenizer.decode([8, 1, 4, 1, 3, 7]) == "rafael"
 
     # Test errors
     with pytest.raises(KeyError):
-        encoder.encode_char("z")
+        tokenizer.encode_char("z")
 
     with pytest.raises(KeyError):
-        encoder.decode_index(9)
+        tokenizer.decode_index(9)
 
 
-def test_character_encoder_from_words() -> None:
-    """Test initializing CharacterEncoder from a corpus of words."""
+def test_character_tokenizer_from_words() -> None:
+    """Test initializing CharacterTokenizer from a corpus of words."""
     words = ["rafael", "gabriela"]
-    encoder = CharacterEncoder.from_words(words, special_token=".")
+    tokenizer = CharacterTokenizer.from_words(words, special_token=".")
 
-    assert encoder.vocab == [".", "a", "b", "e", "f", "g", "i", "l", "r"]
-    assert encoder.vocab_size == 9
+    assert tokenizer.vocab == [".", "a", "b", "e", "f", "g", "i", "l", "r"]
+    assert tokenizer.vocab_size == 9
+
+
+def test_tokenize_dataset() -> None:
+    """Test tokenize_dataset extracts and encodes bigrams correctly."""
+    data = [
+        {"name": "ab", "freq": 10},
+        {"name": "ba", "freq": 5},
+    ]
+    tokenizer = CharacterTokenizer(["a", "b"], special_token=".")
+
+    input_tokens, output_tokens, freqs = tokenize_dataset(data, tokenizer, ngram_size=2)
+
+    assert input_tokens == [[0], [1], [2], [0], [2], [1]]
+    assert output_tokens == [1, 2, 0, 2, 1, 0]
+    assert freqs == [10, 10, 10, 5, 5, 5]

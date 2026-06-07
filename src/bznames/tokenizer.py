@@ -2,20 +2,23 @@
 
 import itertools
 from collections.abc import Iterable
+from typing import Any
+
+from tqdm import tqdm
 
 DEFAULT_SPECIAL_TOKEN = "."
 
 
 # ======================================================================
-# Character Encoder
+# Character Tokenizer
 # ======================================================================
 
 
-class CharacterEncoder:
+class CharacterTokenizer:
     """Encodes characters to indices and decodes indices to characters."""
 
     def __init__(self, vocab: Iterable[str], special_token: str = DEFAULT_SPECIAL_TOKEN) -> None:
-        """Initialize the encoder with a sequence of unique characters.
+        """Initialize the tokenizer with a sequence of unique characters.
 
         Args:
             vocab: An iterable of unique characters (excluding the special token).
@@ -33,15 +36,15 @@ class CharacterEncoder:
     @classmethod
     def from_words(
         cls, words: Iterable[str], special_token: str = DEFAULT_SPECIAL_TOKEN
-    ) -> "CharacterEncoder":
-        """Initialize the encoder from a corpus of words.
+    ) -> "CharacterTokenizer":
+        """Initialize the tokenizer from a corpus of words.
 
         Args:
             words: An iterable of words (strings) to extract the vocabulary from.
             special_token: A special padding/start/end token.
 
         Returns:
-            An instance of CharacterEncoder.
+            An instance of CharacterTokenizer.
         """
         unique_chars = sorted(set("".join(words)))
         return cls(unique_chars, special_token=special_token)
@@ -111,26 +114,74 @@ class CharacterEncoder:
 # ======================================================================
 
 
-def extract_ngrams[T](sequence: Iterable[T], n: int, special_token: T) -> list[tuple[T, ...]]:
-    """Extract N-grams of order n from a sequence with padding.
+def extract_ngrams[T](
+    sequence: Iterable[T], ngram_size: int, special_token: T
+) -> list[tuple[T, ...]]:
+    """Extract N-grams of order ngram_size from a sequence with padding.
 
     Args:
         sequence: The input sequence (e.g., string or list of items).
-        n: The size of N-grams to extract. Must be >= 2.
+        ngram_size: The size of N-grams to extract. Must be >= 2.
         special_token: The token used to pad the sequence.
 
     Returns:
         A list of tuples representing the N-grams.
 
     Raises:
-        ValueError: If n is less than 2.
+        ValueError: If ngram_size is less than 2.
     """
-    if n < 2:
-        raise ValueError("n must be at least 2.")
+    if ngram_size < 2:
+        raise ValueError("ngram_size must be at least 2.")
 
-    padded_sequence = (n - 1) * [special_token]
+    padded_sequence = (ngram_size - 1) * [special_token]
     padded_sequence.extend(sequence)
     padded_sequence.append(special_token)
 
-    iters = (itertools.islice(padded_sequence, i, None) for i in range(n))
+    iters = (itertools.islice(padded_sequence, i, None) for i in range(ngram_size))
     return list(zip(*iters, strict=False))
+
+
+# ======================================================================
+# Dataset Preparation
+# ======================================================================
+
+
+def tokenize_dataset(
+    data: Iterable[dict[str, Any]],
+    tokenizer: CharacterTokenizer,
+    ngram_size: int,
+    show_progress: bool = False,
+) -> tuple[list[list[int]], list[int], list[int]]:
+    """Tokenize and extract N-gram training data from a name dataset.
+
+    Args:
+        data: An iterable of dictionaries, each containing "name" (str) and "freq" (int) keys.
+        tokenizer: The CharacterTokenizer instance to use for encoding characters.
+        ngram_size: The N-gram size (ngram_size >= 2).
+        show_progress: If True, displays a tqdm progress bar during processing.
+
+    Returns:
+        A tuple of (input_tokens, output_tokens, freqs) where:
+            - input_tokens: List of list of encoded indices for the context.
+            - output_tokens: List of encoded indices for the target character.
+            - freqs: List of frequencies corresponding to each N-gram.
+    """
+    input_tokens: list[list[int]] = []
+    output_tokens: list[int] = []
+    freqs: list[int] = []
+
+    items = tqdm(data) if show_progress else data
+
+    for x in items:
+        name = x["name"]
+        freq = x["freq"]
+
+        ngrams = extract_ngrams(name, ngram_size=ngram_size, special_token=tokenizer.special_token)
+        for ngram in ngrams:
+            encoded_input = [tokenizer.encode_char(c) for c in ngram[:-1]]
+            encoded_output = tokenizer.encode_char(ngram[-1])
+            input_tokens.append(encoded_input)
+            output_tokens.append(encoded_output)
+            freqs.append(freq)
+
+    return input_tokens, output_tokens, freqs
