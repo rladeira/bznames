@@ -14,7 +14,7 @@ DEFAULT_SPECIAL_TOKEN = "."
 # ======================================================================
 
 
-class CharacterTokenizer:
+class CharacterEncoder:
     """Encodes characters to indices and decodes indices to characters."""
 
     def __init__(self, vocab: Iterable[str], special_token: str = DEFAULT_SPECIAL_TOKEN) -> None:
@@ -36,7 +36,7 @@ class CharacterTokenizer:
     @classmethod
     def from_words(
         cls, words: Iterable[str], special_token: str = DEFAULT_SPECIAL_TOKEN
-    ) -> "CharacterTokenizer":
+    ) -> "CharacterEncoder":
         """Initialize the tokenizer from a corpus of words.
 
         Args:
@@ -44,7 +44,7 @@ class CharacterTokenizer:
             special_token: A special padding/start/end token.
 
         Returns:
-            An instance of CharacterTokenizer.
+            An instance of CharacterEncoder.
         """
         unique_chars = sorted(set("".join(words)))
         return cls(unique_chars, special_token=special_token)
@@ -148,7 +148,7 @@ def extract_ngrams[T](
 
 def tokenize_dataset(
     data: Iterable[dict[str, Any]],
-    tokenizer: CharacterTokenizer,
+    tokenizer: CharacterEncoder,
     ngram_size: int,
     show_progress: bool = False,
 ) -> tuple[list[list[int]], list[int], list[int]]:
@@ -156,7 +156,7 @@ def tokenize_dataset(
 
     Args:
         data: An iterable of dictionaries, each containing "name" (str) and "freq" (int) keys.
-        tokenizer: The CharacterTokenizer instance to use for encoding characters.
+        tokenizer: The CharacterEncoder instance to use for encoding characters.
         ngram_size: The N-gram size (ngram_size >= 2).
         show_progress: If True, displays a tqdm progress bar during processing.
 

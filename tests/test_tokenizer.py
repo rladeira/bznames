@@ -2,7 +2,7 @@
 
 import pytest
 
-from bznames.tokenizer import CharacterTokenizer, extract_ngrams, tokenize_dataset
+from bznames.tokenizer import CharacterEncoder, extract_ngrams, tokenize_dataset
 
 
 def test_extract_ngrams() -> None:
@@ -24,10 +24,10 @@ def test_extract_ngrams_invalid_n() -> None:
         extract_ngrams("test", ngram_size=1, special_token=".")
 
 
-def test_character_tokenizer() -> None:
-    """Test CharacterTokenizer setup, encoding, and decoding."""
+def test_character_encoder() -> None:
+    """Test CharacterEncoder setup, encoding, and decoding."""
     vocab = ["a", "b", "e", "f", "g", "i", "l", "r"]
-    tokenizer = CharacterTokenizer(vocab, special_token=".")
+    tokenizer = CharacterEncoder(vocab, special_token=".")
 
     # Vocabulary should be: '.', 'a', 'b', 'e', 'f', 'g', 'i', 'l', 'r'
     assert tokenizer.vocab == [".", "a", "b", "e", "f", "g", "i", "l", "r"]
@@ -57,10 +57,10 @@ def test_character_tokenizer() -> None:
         tokenizer.decode_index(9)
 
 
-def test_character_tokenizer_from_words() -> None:
-    """Test initializing CharacterTokenizer from a corpus of words."""
+def test_character_encoder_from_words() -> None:
+    """Test initializing CharacterEncoder from a corpus of words."""
     words = ["rafael", "gabriela"]
-    tokenizer = CharacterTokenizer.from_words(words, special_token=".")
+    tokenizer = CharacterEncoder.from_words(words, special_token=".")
 
     assert tokenizer.vocab == [".", "a", "b", "e", "f", "g", "i", "l", "r"]
     assert tokenizer.vocab_size == 9
@@ -72,7 +72,7 @@ def test_tokenize_dataset() -> None:
         {"name": "ab", "freq": 10},
         {"name": "ba", "freq": 5},
     ]
-    tokenizer = CharacterTokenizer(["a", "b"], special_token=".")
+    tokenizer = CharacterEncoder(["a", "b"], special_token=".")
 
     input_tokens, output_tokens, freqs = tokenize_dataset(data, tokenizer, ngram_size=2)
 
