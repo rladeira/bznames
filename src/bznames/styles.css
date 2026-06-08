@@ -137,3 +137,20 @@
   font-family: monospace;
   white-space: nowrap;
 }
+.sample-item-metrics {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sample-item-nll {
+  font-size: 0.75rem;
+  font-family: monospace;
+  background-color: rgba(148, 163, 184, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+
+
