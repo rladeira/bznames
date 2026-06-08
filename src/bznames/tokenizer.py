@@ -185,3 +185,49 @@ def tokenize_dataset(
             freqs.append(freq)
 
     return input_tokens, output_tokens, freqs
+
+
+def compute_tokenized_examples(
+    input_tokens: Any,
+    output_tokens: Any,
+    freqs: Any,
+    encoder: CharacterEncoder,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Compute decoded details and metrics for tokenized examples.
+
+    Args:
+        input_tokens: List or tensor of encoded inputs.
+        output_tokens: List or tensor of encoded outputs.
+        freqs: List or tensor of frequencies.
+        encoder: The CharacterEncoder used to encode the dataset.
+        limit: Number of examples to process.
+
+    Returns:
+        A list of dictionaries containing decoded information and frequencies.
+    """
+    inputs = (
+        input_tokens[:limit].tolist() if hasattr(input_tokens, "tolist") else input_tokens[:limit]
+    )
+    outputs = (
+        output_tokens[:limit].tolist()
+        if hasattr(output_tokens, "tolist")
+        else output_tokens[:limit]
+    )
+    frequencies = freqs[:limit].tolist() if hasattr(freqs, "tolist") else freqs[:limit]
+
+    examples = []
+    for inp, out, freq in zip(inputs, outputs, frequencies, strict=True):
+        context_str = encoder.decode(inp)
+        target_str = encoder.decode_index(out)
+        bigram_str = context_str + target_str
+
+        examples.append({
+            "input_tokens": inp,
+            "output_token": out,
+            "context_str": context_str,
+            "target_str": target_str,
+            "bigram_str": bigram_str,
+            "frequency": freq,
+        })
+    return examples

@@ -1,6 +1,7 @@
 """Module for calculating metrics and losses like negative log-likelihood."""
 
 import itertools
+from typing import Any
 
 import numpy as np
 import torch
@@ -73,3 +74,72 @@ def compute_bigram_nll_for_name(
         likelihoods.append(probs[i, i_next].item())
 
     return float(-np.log(likelihoods).mean())
+
+
+def compute_bigram_model_nll_comparison(
+    models: dict[str, Any],
+    input_tokens: Any,
+    output_tokens: Any,
+    weights: Any,
+    encoder: CharacterEncoder,
+    test_names: list[str],
+) -> dict[str, dict[str, Any]]:
+    """Compute dataset NLL and individual name NLLs for multiple bigram models.
+
+    Args:
+        models: A dictionary mapping model names to their 2D conditional probability tensors/arrays.
+        input_tokens: Tokenized input dataset.
+        output_tokens: Tokenized output dataset.
+        weights: Sample weights.
+        encoder: The CharacterEncoder to encode/decode characters.
+        test_names: List of name strings to compute NLLs for.
+
+    Returns:
+        A dictionary mapping model names to NLL results.
+        Specifically:
+        {
+            model_name: {
+                "dataset_nll": float,
+                "name_nlls": list[dict[str, Any]] # Each item: {"name": str, "nll": float | None}
+            }
+        }
+    """
+    results = {}
+
+    for model_name, model_probs in models.items():
+        if model_probs is None:
+            continue
+
+        # Convert to torch tensor
+        if isinstance(model_probs, torch.Tensor):
+            probs_tensor = model_probs
+        else:
+            probs_tensor = torch.from_numpy(np.asarray(model_probs))
+
+        # Compute dataset NLL
+        dataset_nll = compute_bigram_nll_for_tokens(
+            probs_tensor,
+            input_tokens,
+            output_tokens,
+            weights,
+        )
+
+        # Compute NLL for each test name
+        name_nlls = []
+        for name in test_names:
+            try:
+                nll = compute_bigram_nll_for_name(name, probs_tensor, encoder)
+            except Exception:
+                nll = None
+
+            name_nlls.append({
+                "name": name,
+                "nll": nll,
+            })
+
+        results[model_name] = {
+            "dataset_nll": dataset_nll,
+            "name_nlls": name_nlls,
+        }
+
+    return results

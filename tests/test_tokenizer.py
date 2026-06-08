@@ -79,3 +79,31 @@ def test_tokenize_dataset() -> None:
     assert input_tokens == [[0], [1], [2], [0], [2], [1]]
     assert output_tokens == [1, 2, 0, 2, 1, 0]
     assert freqs == [10, 10, 10, 5, 5, 5]
+
+
+def test_compute_tokenized_examples() -> None:
+    """Test compute_tokenized_examples returns correct data structures."""
+    from bznames.tokenizer import compute_tokenized_examples
+
+    vocab = ["a", "b"]
+    tokenizer = CharacterEncoder(vocab, special_token=".")
+
+    input_tokens = [[0], [1], [2]]
+    output_tokens = [1, 2, 0]
+    freqs = [10, 20, 30]
+
+    examples = compute_tokenized_examples(
+        input_tokens,
+        output_tokens,
+        freqs,
+        tokenizer,
+        limit=2,
+    )
+
+    assert len(examples) == 2
+    assert examples[0]["input_tokens"] == [0]
+    assert examples[0]["output_token"] == 1
+    assert examples[0]["context_str"] == "."
+    assert examples[0]["target_str"] == "a"
+    assert examples[0]["bigram_str"] == ".a"
+    assert examples[0]["frequency"] == 10

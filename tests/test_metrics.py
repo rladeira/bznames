@@ -69,3 +69,35 @@ def test_compute_bigram_nll_for_name() -> None:
     # Mean NLL = - (-0.693147 + 0.0 + 0.0) / 3 = 0.231049
     nll = compute_bigram_nll_for_name("ab", probs, encoder)
     assert pytest.approx(nll, abs=1e-5) == 0.231049
+
+
+def test_compute_bigram_model_nll_comparison() -> None:
+    """Test compute_bigram_model_nll_comparison calculates dataset and name NLLs."""
+    from bznames.metrics import compute_bigram_model_nll_comparison
+
+    vocab = ["a", "b"]
+    encoder = CharacterEncoder(vocab, special_token=".")
+
+    models = {
+        "Test Model": torch.ones((3, 3)) / 3.0,
+    }
+
+    input_tokens = torch.zeros((5, 1), dtype=torch.int32)
+    output_tokens = torch.ones(5, dtype=torch.int32)
+    weights = torch.ones(5, dtype=torch.float32) / 5.0
+
+    results = compute_bigram_model_nll_comparison(
+        models,
+        input_tokens,
+        output_tokens,
+        weights,
+        encoder,
+        test_names=["ab", "bb"],
+    )
+
+    assert "Test Model" in results
+    data = results["Test Model"]
+    assert "dataset_nll" in data
+    assert len(data["name_nlls"]) == 2
+    assert data["name_nlls"][0]["name"] == "ab"
+    assert "nll" in data["name_nlls"][0]
