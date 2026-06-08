@@ -27,20 +27,20 @@ def test_compute_bigram_nll_for_tokens() -> None:
     # 2. a -> b (prob 1.0, log prob 0.0, count/weight 3.0) -> nll contribution = 0.0
     # 3. b -> . (prob 1.0, log prob 0.0, count/weight 5.0) -> nll contribution = 0.0
     # Expected NLL = 1.386294
-    input_tokens = torch.tensor([0, 1, 2], dtype=torch.int32)
-    output_tokens = torch.tensor([1, 2, 0], dtype=torch.int32)
+    input_tokens = torch.tensor([0, 1, 2], dtype=torch.long)
+    output_tokens = torch.tensor([1, 2, 0], dtype=torch.long)
     weights = torch.tensor([2.0, 3.0, 5.0], dtype=torch.float32)
 
     nll = compute_bigram_nll_for_tokens(probs, input_tokens, output_tokens, weights)
     assert pytest.approx(nll, abs=1e-5) == 1.386294
 
     # Test that a 2D input_tokens of shape (N, 1) is handled correctly too
-    input_tokens_2d = torch.tensor([[0], [1], [2]], dtype=torch.int32)
+    input_tokens_2d = torch.tensor([[0], [1], [2]], dtype=torch.long)
     nll_2d = compute_bigram_nll_for_tokens(probs, input_tokens_2d, output_tokens, weights)
     assert pytest.approx(nll_2d, abs=1e-5) == 1.386294
 
     # Test error when input_tokens is 2D but shape is not (N, 1)
-    input_tokens_invalid = torch.tensor([[0, 1], [1, 2]], dtype=torch.int32)
+    input_tokens_invalid = torch.tensor([[0, 1], [1, 2]], dtype=torch.long)
     with pytest.raises(ValueError, match="input_tokens must be 1D or have shape"):
         compute_bigram_nll_for_tokens(probs, input_tokens_invalid, output_tokens, weights)
 
@@ -82,8 +82,8 @@ def test_compute_bigram_model_nll_comparison() -> None:
         "Test Model": torch.ones((3, 3)) / 3.0,
     }
 
-    input_tokens = torch.zeros((5, 1), dtype=torch.int32)
-    output_tokens = torch.ones(5, dtype=torch.int32)
+    input_tokens = torch.zeros((5, 1), dtype=torch.long)
+    output_tokens = torch.ones(5, dtype=torch.long)
     weights = torch.ones(5, dtype=torch.float32) / 5.0
 
     results = compute_bigram_model_nll_comparison(
