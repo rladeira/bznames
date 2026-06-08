@@ -129,21 +129,20 @@ def test_display_bigram_model_nll_comparison(mock_html, mock_display) -> None:
     encoder = CharacterEncoder(vocab, special_token=".")
 
     models = {
-        "Computed Model": torch.ones((10, 10)) / 10.0,
-        "Uniform Model": torch.ones((10, 10)) / 10.0,
+        "Computed Model": {
+            "probs": torch.ones((10, 10)) / 10.0,
+            "dataset_nll": 1.25,
+        },
+        "Uniform Model": {
+            "probs": torch.ones((10, 10)) / 10.0,
+            "dataset_nll": 1.75,
+        },
     }
-
-    input_tokens = torch.zeros((5, 1), dtype=torch.int32)
-    output_tokens = torch.ones(5, dtype=torch.int32)
-    weights = torch.ones(5, dtype=torch.float32) / 5.0
 
     from bznames.viz import display_bigram_model_nll_comparison
 
     display_bigram_model_nll_comparison(
         models,
-        input_tokens,
-        output_tokens,
-        weights,
         encoder,
         test_names=["abc", "def"],
     )

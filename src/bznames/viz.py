@@ -3,9 +3,11 @@
 from importlib.resources import files
 from typing import Any
 
+import numpy as np
+import torch
 from IPython.display import HTML, Markdown, display
 
-from bznames.metrics import compute_bigram_model_nll_comparison
+from bznames.metrics import compute_bigram_nll_for_name
 from bznames.sampling import compute_bigram_model_samples
 from bznames.tokenizer import CharacterEncoder, compute_tokenized_examples
 
@@ -76,31 +78,48 @@ def display_bigram_model_samples(
 
 
 def display_bigram_model_nll_comparison(
-    models: dict[str, Any],
-    input_tokens: Any,
-    output_tokens: Any,
-    weights: Any,
+    models: dict[str, dict[str, Any]],
     encoder: CharacterEncoder,
     test_names: list[str],
 ) -> None:
     """Display side-by-side comparison of dataset NLL and individual name NLLs for bigram models.
 
     Args:
-        models: A dictionary mapping model names to their 2D conditional probability tensors/arrays.
-        input_tokens: Tokenized input dataset.
-        output_tokens: Tokenized output dataset.
-        weights: Sample weights.
+        models: A dictionary mapping model names to dictionaries containing:
+            - "probs": The 2D conditional probability tensor/array.
+            - "dataset_nll": The precomputed dataset negative log-likelihood (float).
         encoder: The CharacterEncoder to encode/decode characters.
         test_names: List of name strings to compute NLLs for.
     """
-    nll_data = compute_bigram_model_nll_comparison(
-        models=models,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        weights=weights,
-        encoder=encoder,
-        test_names=test_names,
-    )
+    nll_data = {}
+    for model_name, model_info in models.items():
+        probs = model_info["probs"]
+        dataset_nll = model_info["dataset_nll"]
+
+        # Convert to torch tensor
+        if isinstance(probs, torch.Tensor):
+            probs_tensor = probs
+        else:
+            probs_tensor = torch.from_numpy(np.asarray(probs))
+
+        # Compute NLL for each test name
+        name_nlls = []
+        for name in test_names:
+            try:
+                nll = compute_bigram_nll_for_name(name, probs_tensor, encoder)
+            except Exception:
+                nll = None
+
+            name_nlls.append({
+                "name": name,
+                "nll": nll,
+            })
+
+        nll_data[model_name] = {
+            "dataset_nll": dataset_nll,
+            "name_nlls": name_nlls,
+        }
+
     html = _render_bigram_model_nll_comparison_html(nll_data)
     display(HTML(html))
 
