@@ -234,3 +234,48 @@ def test_render_bigram_model_nll_comparison_html() -> None:
     assert "Dataset NLL: 1.500" in html_out
     assert "'ab'" in html_out
     assert "1.250 nll" in html_out
+
+
+def test_render_tokenized_examples_dynamic_column_names() -> None:
+    """Test that rendering functions use correct dynamic column names based on ngram size."""
+    from bznames.viz import (
+        _render_tokenized_examples_html,
+        _render_tokenized_examples_markdown,
+        _render_tokenized_examples_text,
+    )
+
+    def make_examples(input_len: int) -> list[dict]:
+        return [
+            {
+                "input_tokens": [0] * input_len,
+                "output_token": 1,
+                "context_str": "." * input_len,
+                "target_str": "a",
+                "bigram_str": "." * input_len + "a",
+                "frequency": 10,
+            }
+        ]
+
+    # N-gram size 1 (Unigram)
+    ex1 = make_examples(0)
+    assert "Unigram" in _render_tokenized_examples_text(ex1)
+    assert "Unigram" in _render_tokenized_examples_markdown(ex1)
+    assert "Unigram" in _render_tokenized_examples_html(ex1)
+
+    # N-gram size 2 (Bigram)
+    ex2 = make_examples(1)
+    assert "Bigram" in _render_tokenized_examples_text(ex2)
+    assert "Bigram" in _render_tokenized_examples_markdown(ex2)
+    assert "Bigram" in _render_tokenized_examples_html(ex2)
+
+    # N-gram size 3 (Trigram)
+    ex3 = make_examples(2)
+    assert "Trigram" in _render_tokenized_examples_text(ex3)
+    assert "Trigram" in _render_tokenized_examples_markdown(ex3)
+    assert "Trigram" in _render_tokenized_examples_html(ex3)
+
+    # N-gram size 4 (4-gram)
+    ex4 = make_examples(3)
+    assert "4-gram" in _render_tokenized_examples_text(ex4)
+    assert "4-gram" in _render_tokenized_examples_markdown(ex4)
+    assert "4-gram" in _render_tokenized_examples_html(ex4)

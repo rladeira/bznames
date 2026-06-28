@@ -129,6 +129,24 @@ def display_bigram_model_nll_comparison(
 # ======================================================================
 
 
+def _get_ngram_column_info(examples: list[dict[str, Any]]) -> tuple[str, int]:
+    """Determine the column name and width for the n-gram column.
+
+    Returns:
+        A tuple of (column_name, column_width).
+    """
+    ngram_size = len(examples[0]["input_tokens"]) + 1 if examples else 2
+    if ngram_size == 1:
+        name = "Unigram"
+    elif ngram_size == 2:
+        name = "Bigram"
+    elif ngram_size == 3:
+        name = "Trigram"
+    else:
+        name = f"{ngram_size}-gram"
+    return name, max(8, len(name))
+
+
 def _render_tokenized_examples_text(examples: list[dict[str, Any]]) -> str:
     """Format tokenized examples as plain text.
 
@@ -138,11 +156,12 @@ def _render_tokenized_examples_text(examples: list[dict[str, Any]]) -> str:
     Returns:
         The formatted plain text string.
     """
+    col_name, col_width = _get_ngram_column_info(examples)
     headers = (
         f"{'Input (Context)':<20} -> {'Output (Target)':<18} | "
-        f"{'Bigram':<8} | {'Frequency':<10}"
+        f"{col_name:<{col_width}} | {'Frequency':<10}"
     )
-    lines = [headers, "-" * 65]
+    lines = [headers, "-" * (58 + col_width)]
     for example in examples:
         inp = example["input_tokens"]
         out = example["output_token"]
@@ -154,7 +173,11 @@ def _render_tokenized_examples_text(examples: list[dict[str, Any]]) -> str:
         context_repr = f"[{', '.join(map(str, inp))}] ({context_str!r})"
         target_repr = f"{out} ({target_str!r})"
 
-        lines.append(f"{context_repr:<20} -> {target_repr:<18} | {bigram_str!r:<8} | {freq:,}")
+        line = (
+            f"{context_repr:<20} -> {target_repr:<18} | "
+            f"{bigram_str!r:<{col_width}} | {freq:,}"
+        )
+        lines.append(line)
     return "\n".join(lines)
 
 
@@ -167,8 +190,9 @@ def _render_tokenized_examples_markdown(examples: list[dict[str, Any]]) -> str:
     Returns:
         The formatted markdown string.
     """
+    col_name, _ = _get_ngram_column_info(examples)
     lines = [
-        "| Input (Context) | Output (Target) | Bigram | Frequency |",
+        f"| Input (Context) | Output (Target) | {col_name} | Frequency |",
         "|:---|:---|:---:|---:|",
     ]
     for example in examples:
@@ -195,6 +219,7 @@ def _render_tokenized_examples_html(examples: list[dict[str, Any]]) -> str:
     Returns:
         The formatted HTML table string.
     """
+    col_name, _ = _get_ngram_column_info(examples)
     rows = []
     for example in examples:
         inp = example["input_tokens"]
@@ -225,7 +250,7 @@ def _render_tokenized_examples_html(examples: list[dict[str, Any]]) -> str:
         <tr>
           <th>Input (Context)</th>
           <th>Output (Target)</th>
-          <th style="text-align: center;">Bigram</th>
+          <th style="text-align: center;">{col_name}</th>
           <th style="text-align: right;">Frequency</th>
         </tr>
       </thead>
