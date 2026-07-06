@@ -43,7 +43,7 @@ def compute_bigram_nll_for_tokens(
     )
 
     # Compute: -sum(weights * log(P(output_token | input_token)))
-    nll = -1 * (weights * torch.log(probs[input_tokens, output_tokens])).sum()
+    nll = -torch.dot(weights, torch.log(probs[input_tokens, output_tokens]))
 
     return nll.item()
 
