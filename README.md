@@ -4,6 +4,10 @@ Inspired by [Andrej Karpathy](https://github.com/karpathy)'s projects ([nn-zero-
 
 Developed primarily for educational purposes, the goal of this project is to implement generative architectures from scratch to gain a deeper understanding of neural networks and language modeling.
 
+## Interactive Docs
+
+* [The Stubborn Gradient](docs/stubborn_gradient.html) — an interactive companion to `notebooks/bigrams.ipynb` exploring gradient-descent dynamics on a quadratic vs. saturating (NLL-like) bowl: learning-rate regimes, valley oscillation, and why the loss can converge while the gradient norm plateaus. Open the file locally in a browser (it is fully self-contained, no dependencies).
+
 ## Data Reference
 
 The names are retrieved from the official IBGE Censo 2010 database under the following conditions:
