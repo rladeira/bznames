@@ -24,6 +24,7 @@ dev = [
     "ruff",
     "ty",
     "ipywidgets",
+    "nbformat>=5.10.4",
 ]
 
 [build-system]
