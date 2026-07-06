@@ -1,6 +1,11 @@
-"""Visualization tools for bznames models and tokenizers."""
+"""Notebook-only presentation helpers for bznames.
 
-from importlib.resources import files
+Rich HTML/markdown/text rendering used by the notebooks. This is intentionally
+kept out of the `bznames` package: it is scratch presentation code with no API
+stability or test obligations, free to change as the notebooks evolve.
+"""
+
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -8,11 +13,116 @@ import torch
 from IPython.display import HTML, Markdown, display
 
 from bznames.metrics import compute_bigram_nll_for_name
-from bznames.sampling import compute_bigram_model_samples
-from bznames.tokenizer import CharacterEncoder, compute_tokenized_examples
+from bznames.sampling import sample_name_from_bigram_model
+from bznames.tokenizer import CharacterEncoder
 
-_STYLES_CSS = files("bznames").joinpath("styles.css").read_text(encoding="utf-8")
+_STYLES_CSS = (Path(__file__).parent / "styles.css").read_text(encoding="utf-8")
 _STYLE_TAG = f"<style>\n{_STYLES_CSS}\n</style>"
+
+
+# ======================================================================
+# Data Preparation (presentation-shaped, feeds the renderers below)
+# ======================================================================
+
+
+def compute_tokenized_examples(
+    input_tokens: Any,
+    output_tokens: Any,
+    freqs: Any,
+    encoder: CharacterEncoder,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Compute decoded details and metrics for tokenized examples."""
+    inputs = (
+        input_tokens[:limit].tolist() if hasattr(input_tokens, "tolist") else input_tokens[:limit]
+    )
+    outputs = (
+        output_tokens[:limit].tolist()
+        if hasattr(output_tokens, "tolist")
+        else output_tokens[:limit]
+    )
+    frequencies = freqs[:limit].tolist() if hasattr(freqs, "tolist") else freqs[:limit]
+
+    examples = []
+    for inp, out, freq in zip(inputs, outputs, frequencies, strict=True):
+        context_str = encoder.decode(inp)
+        target_str = encoder.decode_index(out)
+        bigram_str = context_str + target_str
+
+        examples.append({
+            "input_tokens": inp,
+            "output_token": out,
+            "context_str": context_str,
+            "target_str": target_str,
+            "bigram_str": bigram_str,
+            "frequency": freq,
+        })
+    return examples
+
+
+def compute_bigram_model_samples(
+    models: dict[str, Any],
+    encoder: CharacterEncoder,
+    num_samples: int = 10,
+) -> dict[str, dict[str, Any]]:
+    """Generate sampled names and calculate statistics for multiple bigram models."""
+    results = {}
+
+    for model_name, model_probs in models.items():
+        if model_probs is None:
+            continue
+
+        # Convert model_probs to numpy for sampling, and keep torch tensor for NLL
+        if isinstance(model_probs, torch.Tensor):
+            probs_tensor = model_probs
+            probs_numpy = model_probs.detach().cpu().numpy()
+        else:
+            probs_numpy = np.asarray(model_probs)
+            probs_tensor = torch.from_numpy(probs_numpy)
+
+        samples = []
+        nlls = []
+        for _ in range(num_samples):
+            name = sample_name_from_bigram_model(probs_numpy, encoder)
+            samples.append(name)
+            try:
+                nll = compute_bigram_nll_for_name(name, probs_tensor, encoder)
+                nlls.append(nll)
+            except Exception:
+                nlls.append(None)
+
+        if not samples:
+            continue
+
+        avg_len = sum(len(s) for s in samples) / len(samples)
+        unique_chars = len(set("".join(samples)))
+        max_len = max(len(s) for s in samples)
+
+        valid_nlls = [n for n in nlls if n is not None]
+        avg_nll = sum(valid_nlls) / len(valid_nlls) if valid_nlls else None
+
+        samples_list = []
+        for s, nll in zip(samples, nlls, strict=True):
+            samples_list.append({
+                "name": s,
+                "length": len(s),
+                "nll": nll,
+            })
+
+        results[model_name] = {
+            "samples": samples_list,
+            "avg_len": avg_len,
+            "max_len": max_len,
+            "unique_chars": unique_chars,
+            "avg_nll": avg_nll,
+        }
+
+    return results
+
+
+# ======================================================================
+# Display Functions (public API for the notebooks)
+# ======================================================================
 
 
 def display_tokenized_examples(
@@ -23,19 +133,7 @@ def display_tokenized_examples(
     limit: int = 10,
     format_type: str = "text",
 ) -> None:
-    """Display a preview of the tokenized dataset in text, markdown, or HTML format.
-
-    Args:
-        input_tokens: List or tensor of encoded inputs.
-        output_tokens: List or tensor of encoded outputs.
-        freqs: List or tensor of frequencies.
-        encoder: The CharacterEncoder used to encode the dataset.
-        limit: Number of examples to display.
-        format_type: Display format. Can be "text", "markdown", or "html".
-
-    Raises:
-        ValueError: If format_type is not "text", "markdown", or "html".
-    """
+    """Display a preview of the tokenized dataset in text, markdown, or HTML format."""
     valid_formats = {"text", "markdown", "html"}
     if format_type not in valid_formats:
         raise ValueError(f"format_type must be one of {valid_formats}, got {format_type!r}")
@@ -61,13 +159,7 @@ def display_bigram_model_samples(
     encoder: CharacterEncoder,
     num_samples: int = 10,
 ) -> None:
-    """Generate and display sampled names comparison from bigram models side-by-side.
-
-    Args:
-        models: A dictionary mapping model names to their 2D conditional probability tensors/arrays.
-        encoder: The CharacterEncoder to encode/decode characters.
-        num_samples: Number of samples to generate per model.
-    """
+    """Generate and display sampled names comparison from bigram models side-by-side."""
     samples_data = compute_bigram_model_samples(
         models=models,
         encoder=encoder,
@@ -82,7 +174,7 @@ def display_bigram_model_nll_comparison(
     encoder: CharacterEncoder,
     test_names: list[str],
 ) -> None:
-    """Display side-by-side comparison of dataset NLL and individual name NLLs for bigram models.
+    """Display side-by-side comparison of dataset NLL and individual name NLLs.
 
     Args:
         models: A dictionary mapping model names to dictionaries containing:
@@ -130,11 +222,7 @@ def display_bigram_model_nll_comparison(
 
 
 def _get_ngram_column_info(examples: list[dict[str, Any]]) -> tuple[str, int]:
-    """Determine the column name and width for the n-gram column.
-
-    Returns:
-        A tuple of (column_name, column_width).
-    """
+    """Determine the column name and width for the n-gram column."""
     ngram_size = len(examples[0]["input_tokens"]) + 1 if examples else 2
     if ngram_size == 1:
         name = "Unigram"
@@ -148,14 +236,7 @@ def _get_ngram_column_info(examples: list[dict[str, Any]]) -> tuple[str, int]:
 
 
 def _render_tokenized_examples_text(examples: list[dict[str, Any]]) -> str:
-    """Format tokenized examples as plain text.
-
-    Args:
-        examples: List of tokenized examples metadata.
-
-    Returns:
-        The formatted plain text string.
-    """
+    """Format tokenized examples as plain text."""
     col_name, col_width = _get_ngram_column_info(examples)
     headers = (
         f"{'Input (Context)':<20} -> {'Output (Target)':<18} | "
@@ -182,14 +263,7 @@ def _render_tokenized_examples_text(examples: list[dict[str, Any]]) -> str:
 
 
 def _render_tokenized_examples_markdown(examples: list[dict[str, Any]]) -> str:
-    """Format tokenized examples as markdown.
-
-    Args:
-        examples: List of tokenized examples metadata.
-
-    Returns:
-        The formatted markdown string.
-    """
+    """Format tokenized examples as markdown."""
     col_name, _ = _get_ngram_column_info(examples)
     lines = [
         f"| Input (Context) | Output (Target) | {col_name} | Frequency |",
@@ -211,14 +285,7 @@ def _render_tokenized_examples_markdown(examples: list[dict[str, Any]]) -> str:
 
 
 def _render_tokenized_examples_html(examples: list[dict[str, Any]]) -> str:
-    """Format tokenized examples as HTML.
-
-    Args:
-        examples: List of tokenized examples metadata.
-
-    Returns:
-        The formatted HTML table string.
-    """
+    """Format tokenized examples as HTML."""
     col_name, _ = _get_ngram_column_info(examples)
     rows = []
     for example in examples:
@@ -263,14 +330,7 @@ def _render_tokenized_examples_html(examples: list[dict[str, Any]]) -> str:
 
 
 def _render_bigram_model_samples_html(samples_data: dict[str, dict[str, Any]]) -> str:
-    """Format bigram model samples and metrics as HTML cards.
-
-    Args:
-        samples_data: Dict of model samples and metrics.
-
-    Returns:
-        The formatted HTML cards string.
-    """
+    """Format bigram model samples and metrics as HTML cards."""
     card_htmls = []
 
     for model_name, data in samples_data.items():
@@ -332,14 +392,7 @@ def _render_bigram_model_samples_html(samples_data: dict[str, dict[str, Any]]) -
 def _render_bigram_model_nll_comparison_html(
     nll_data: dict[str, dict[str, Any]]
 ) -> str:
-    """Format NLL comparison metrics as HTML cards.
-
-    Args:
-        nll_data: Dict of NLL comparison metrics.
-
-    Returns:
-        The formatted HTML cards string.
-    """
+    """Format NLL comparison metrics as HTML cards."""
     card_htmls = []
 
     for model_name, data in nll_data.items():

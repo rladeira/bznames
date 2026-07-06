@@ -27,3 +27,14 @@ select = [
 
 [lint.pydocstyle]
 convention = "google"
+
+[lint.isort]
+# `helpers` is the notebook-local module in notebooks/
+known-first-party = ["bznames", "helpers"]
+
+[lint.per-file-ignores]
+# Notebook helpers are scratch presentation code — no docstring ceremony required.
+# S101 (assert) is a legitimate invariant/equivalence check in these teaching
+# notebooks, and S105 is a false positive on the SPECIAL_TOKEN = "." sentinel;
+# both S rules are layered on by the static-review hook, not the project config.
+"notebooks/*" = ["D", "DOC", "S101", "S105"]
